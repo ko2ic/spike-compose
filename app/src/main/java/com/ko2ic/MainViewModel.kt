@@ -1,5 +1,8 @@
 package com.ko2ic
 
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,10 +14,13 @@ class MainViewModel : ViewModel() {
     println("MainViewModel")
   }
 
-  private val _count: MutableStateFlow<Int> = MutableStateFlow(0)
+  // こっちでやると無駄にincreaseCount()を呼び出したコンポーネントが再コンポジションしちゃう
+//  private val _count: MutableStateFlow<Int> = MutableStateFlow(0)
+//  val count: StateFlow<Int> = _count.asStateFlow()
 
-  val count: StateFlow<Int> = _count.asStateFlow()
-
+  private val _count: MutableState<Int> = mutableStateOf(0)
+  val count: State<Int> = _count
+  
   fun increaseCount() {
     _count.value++
   }

@@ -11,10 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,18 +56,18 @@ fun MyContentView() {
 
 @Composable
 private fun MainScreen(toSecond: () -> Unit) {
-  SideEffect {
-    println("MainScreen")
-  }
+  LogCompositions("MainScreen")
+
   Scaffold(
     topBar = {
       TopAppBar(
         title = { Text("My TopAppBar") },
       )
     }
-  ) {
+  ) { padding ->
     LazyColumn(
       Modifier
+        .padding(padding)
         .fillMaxWidth()
     ) {
       item {
@@ -90,9 +87,7 @@ private fun ListTitle(
   title: String,
   onClick: () -> Unit,
 ) {
-  SideEffect {
-    println("ListTitle")
-  }
+  LogCompositions("ListTitle")
   Row(verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { onClick() }
   ) {
@@ -108,9 +103,7 @@ private fun ListTitle(
 
 @Composable
 fun SecondScreen(onClick: () -> Unit) {
-  SideEffect {
-    println("SecondScreen")
-  }
+  LogCompositions("SecondScreen")
   Scaffold(
     topBar = {
       TopAppBar(
@@ -124,21 +117,22 @@ fun SecondScreen(onClick: () -> Unit) {
         },
       )
     }
-  ) {
-    FullScreenDialog {
+  ) { padding ->
+    FullScreenDialog(Modifier.padding(padding)) {
       onClick()
     }
   }
 }
 
 @Composable
-fun FullScreenDialog(onClose: () -> Unit) {
-  SideEffect {
-    println("FullScreenDialog")
-  }
+fun FullScreenDialog(
+  modifier: Modifier = Modifier,
+  onClose: () -> Unit
+) {
+  LogCompositions("FullScreenDialog")
   Dialog(onDismissRequest = onClose) {
     Surface(
-      modifier = Modifier.fillMaxSize(),
+      modifier = modifier.fillMaxSize(),
       shape = RoundedCornerShape(0.dp),
       color = Color.White
     ) {
@@ -157,8 +151,10 @@ fun FullScreenDialog(onClose: () -> Unit) {
                 }
               },
             )
-          }) {
-          CountUpScreen(viewModel<MainViewModel>())
+          }) { padding ->
+          CountUpScreen(
+            Modifier.padding(padding)
+          )
         }
       }
     }
@@ -166,35 +162,41 @@ fun FullScreenDialog(onClose: () -> Unit) {
 }
 
 @Composable
-fun CountUpScreen(viewModel: MainViewModel) {
-  val count: Int by viewModel.count.collectAsState()
-  SideEffect {
-    println("CountUpScreen")
-  }
+fun CountUpScreen(
+  modifier: Modifier = Modifier,
+  viewModel: MainViewModel = viewModel(),
+) {
+//  val count: Int by viewModel.count.collectAsState()
+  val count: Int by viewModel.count
+  LogCompositions("CountUpScreen")
   Column(
-    modifier = Modifier.fillMaxSize(),
+    modifier = modifier.fillMaxSize(),
     verticalArrangement = Arrangement.SpaceEvenly,
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
 
-    Text(
-      text = "$count"
+    ACompose(
+      count = count
     )
-    Button(onClick = {
+    BCompose()
+    CCompose {
       viewModel.increaseCount()
-    }) {
-      Icon(Icons.Outlined.Add, contentDescription = "+")
     }
-    
+
+//    Text(
+//      text = "$count"
+//    )
+//    Button(onClick = {
+//      viewModel.increaseCount()
+//    }) {
+//      Icon(Icons.Outlined.Add, contentDescription = "+")
+//    }
   }
 }
 
 @Composable
 private fun ACompose(count: Int) {
-  SideEffect {
-    println("ACompose")
-  }
-
+  LogCompositions("ACompose")
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
       text = "$count"
@@ -205,9 +207,7 @@ private fun ACompose(count: Int) {
 
 @Composable
 private fun ChildACompose() {
-  SideEffect {
-    println("ChildACompose")
-  }
+  LogCompositions("ChildACompose")
   Text(
     text = "ChildACompose"
   )
@@ -215,9 +215,7 @@ private fun ChildACompose() {
 
 @Composable
 private fun BCompose() {
-  SideEffect {
-    println("BCompose")
-  }
+  LogCompositions("BCompose")
   Text(
     text = "I am composable that will not be recompose"
   )
@@ -225,9 +223,7 @@ private fun BCompose() {
 
 @Composable
 private fun CCompose(onClick: () -> Unit) {
-  SideEffect {
-    println("CCompose")
-  }
+  LogCompositions("CCompose")
   Button(onClick = {
     onClick()
   }) {
@@ -235,10 +231,33 @@ private fun CCompose(onClick: () -> Unit) {
   }
 }
 
+@Composable
+fun CustomButton(
+  onClick: () -> Unit,
+  content: @Composable () -> Unit
+) {
+  LogCompositions("CustomButton")
+  Button(onClick = onClick, modifier = Modifier.padding(16.dp)) {
+    LogCompositions("CustomButton content")
+    content()
+  }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
   SpikecomposeTheme {
-    SecondScreen({})
+    SecondScreen {}
+  }
+}
+
+class Ref(var value: Int)
+
+@Composable
+inline fun LogCompositions(msg: String) {
+  if (BuildConfig.DEBUG) {
+    val ref = remember { Ref(0) }
+    SideEffect { ref.value++ }
+    println("Compositions: $msg ${ref.value}")
   }
 }
